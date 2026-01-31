@@ -43,12 +43,12 @@
 
     <div class="game-ui">
         <div class="header">
-            <div id="guide">右ボタンを長押し！</div>
+            <div id="guide"></div>
         </div>
         <div class="footer">
             <div class="btn-box">
-                <button id="btn-right" class="btn active">▶</button>
-                <button id="btn-up" class="btn disabled">▲</button>
+                <button id="btn-right" class="btn active"
+                <button id="btn-up" class="btn disabled"
             </div>
         </div>
     </div>
@@ -64,16 +64,16 @@
                 step = 2;
                 btnRight.classList.replace('active', 'disabled');
                 btnUp.classList.replace('disabled', 'active');
-                guide.innerText = "次は奥ボタン！";
+                guide.innerText = "";
             } else if (next === 'finish' && step === 2) {
                 step = 3;
                 btnUp.classList.replace('active', 'disabled');
-                guide.innerText = "キャッチ中...";
+                guide.innerText = "";
                 // 5秒後に最初に戻る
                 setTimeout(() => {
                     step = 1;
                     btnRight.classList.replace('disabled', 'active');
-                    guide.innerText = "右ボタンを長押し！";
+                    guide.innerText = "";
                 }, 5000);
             }
         }
