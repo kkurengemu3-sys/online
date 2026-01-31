@@ -2,77 +2,48 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>オンクレ：IP固定接続</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPカメラ モニター</title>
     <style>
-        :root { --accent: #ff4d8d; }
-        body { margin: 0; background: #000; color: white; font-family: sans-serif; overflow: hidden; touch-action: manipulation; }
-        
-        /* 映像：指定されたIPアドレスのストリームを表示 */
-        .video-wrapper {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
-            background: #222; display: flex; justify-content: center; align-items: center;
+        body {
+            background-color: #333;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: sans-serif;
         }
-        
-        /* IP WebcamなどのMJPEGストリーム用 */
-        #camera-stream {
-            width: 100%; height: 100%; object-fit: cover;
+        .video-container {
+            border: 5px solid #555;
+            background-color: #000;
+            max-width: 90%;
         }
-
-        .game-ui { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; pointer-events: none; }
-        .header { background: linear-gradient(rgba(0,0,0,0.8), transparent); padding: 20px; font-weight: bold; }
-        .footer { margin-top: auto; padding-bottom: 50px; background: linear-gradient(transparent, rgba(0,0,0,0.9)); text-align: center; pointer-events: auto; }
-        
-        .btn-box { display: flex; justify-content: center; gap: 30px; margin-top: 10px; }
-        .btn { 
-            width: 100px; height: 100px; border-radius: 50%; border: 5px solid #fff; 
-            background: rgba(0,0,0,0.4); color: white; font-size: 2.5rem; outline: none;
-            cursor: pointer; -webkit-tap-highlight-color: transparent;
+        img {
+            display: block;
+            width: 100%;
+            height: auto;
         }
-        .btn.active { border-color: var(--accent); box-shadow: 0 0 20px var(--accent); color: var(--accent); }
-        .btn.disabled { opacity: 0.2; filter: grayscale(1); }
+        .info {
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
 
-    <div class="video-wrapper">
-        <img id="camera-stream" src="http://192.168.11.28:8080/video" 
-             onerror="this.src='https://via.placeholder.com/800x600/222/fff?text=Camera+Not+Found'"
-             alt="Camera Stream">
+    <h2>カメラ ライブ映像</h2>
+
+    <div class="video-container">
+        <img src="https://192.168.11.28:8080/video" 
+             alt="カメラ映像が読み込めません" 
+             onerror="this.src='https://192.168.11.28:8080/shot.jpg';">
     </div>
 
-    <div class="game-ui">
-        <div class="header">
-            <div id="guide"></div>
-        </div>
-        <div class="footer">
-            <div class="btn-box">
-                <button id="btn-right" class="btn active"
-                <button id="btn-up" class="btn disabled"
-            </div>
-        </div>
+    <div class="info">
+        URL: <a href="https://192.168.11.28:8080" target="_blank" style="color: #00acee;">https://192.168.11.28:8080</a>
     </div>
 
-    <script>
-        let step = 1;
-        const btnRight = document.getElementById('btn-right');
-        const btnUp = document.getElementById('btn-up');
-        const guide = document.getElementById('guide');
-
-        function moveEnd(next) {
-              
-                setTimeout(() => {
-                    step = 1;
-                    btnRight.classList.replace('disabled', 'active');
-                    guide.innerText = "";
-                }, 5000);
-            }
-        }
-
-        btnRight.onmousedown = btnRight.ontouchstart = (e) => { if(step===1) e.preventDefault(); };
-        btnRight.onmouseup = btnRight.ontouchend = () => { if(step===1) moveEnd('up'); };
-        btnUp.onmousedown = btnUp.ontouchstart = (e) => { if(step===2) e.preventDefault(); };
-        btnUp.onmouseup = btnUp.ontouchend = () => { if(step===2) moveEnd('finish'); };
-    </script>
 </body>
 </html>
