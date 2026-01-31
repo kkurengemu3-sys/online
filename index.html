@@ -3,25 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>オンクレ：操作パネル（完成版）</title>
-    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <title>オンクレ：IP固定接続</title>
     <style>
         :root { --accent: #ff4d8d; }
         body { margin: 0; background: #000; color: white; font-family: sans-serif; overflow: hidden; touch-action: manipulation; }
         
-        /* 映像：画面いっぱいに広げ、背景にする */
-        #remote-video {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            object-fit: cover; z-index: 1;
+        /* 映像：指定されたIPアドレスのストリームを表示 */
+        .video-wrapper {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
+            background: #222; display: flex; justify-content: center; align-items: center;
+        }
+        
+        /* IP WebcamなどのMJPEGストリーム用 */
+        #camera-stream {
+            width: 100%; height: 100%; object-fit: cover;
         }
 
-        /* ゲームUI：映像の上に重ねる */
-        #game-ui { 
-            position: relative; z-index: 10; height: 100vh; 
-            display: none; /* 最初は隠しておく */
-            flex-direction: column; pointer-events: none;
-        }
-
+        .game-ui { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; pointer-events: none; }
         .header { background: linear-gradient(rgba(0,0,0,0.8), transparent); padding: 20px; font-weight: bold; }
         .footer { margin-top: auto; padding-bottom: 50px; background: linear-gradient(transparent, rgba(0,0,0,0.9)); text-align: center; pointer-events: auto; }
         
@@ -29,104 +27,59 @@
         .btn { 
             width: 100px; height: 100px; border-radius: 50%; border: 5px solid #fff; 
             background: rgba(0,0,0,0.4); color: white; font-size: 2.5rem; outline: none;
-            -webkit-tap-highlight-color: transparent; cursor: pointer;
+            cursor: pointer; -webkit-tap-highlight-color: transparent;
         }
         .btn.active { border-color: var(--accent); box-shadow: 0 0 20px var(--accent); color: var(--accent); }
         .btn.disabled { opacity: 0.2; filter: grayscale(1); }
-
-        /* 入力画面：接続前だけ表示 */
-        #overlay {
-            position: fixed; inset: 0; background: #1a1a2e;
-            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100;
-        }
-        input { padding: 15px; font-size: 1.2rem; border-radius: 8px; border: 2px solid #333; margin-bottom: 15px; width: 250px; text-align: center; }
-        .connect-btn { background: var(--accent); color: white; border: none; padding: 15px 50px; border-radius: 30px; font-weight: bold; font-size: 1.2rem; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <video id="remote-video" autoplay playsinline muted></video>
-
-    <div id="overlay">
-        <h2 style="margin-bottom:20px;">オンクレ接続</h2>
-        <input type="text" id="target-id" placeholder="カメラのIDを入力">
-        <button class="connect-btn" onclick="connectToCamera()">映像を読み込む</button>
-        <p id="status-msg" style="margin-top:15px; font-size:12px; color:#888;">IDを入れてボタンを押してください</p>
+    <div class="video-wrapper">
+        <img id="camera-stream" src="http://192.168.11.28:8080/video" 
+             onerror="this.src='https://via.placeholder.com/800x600/222/fff?text=Camera+Not+Found'"
+             alt="Camera Stream">
     </div>
 
-    <div id="game-ui">
+    <div class="game-ui">
         <div class="header">
-            <div id="guide">映像読込中...</div>
+            <div id="guide">右ボタンを長押し！</div>
         </div>
         <div class="footer">
             <div class="btn-box">
-                <button id="btn-right" class="btn">▶</button>
+                <button id="btn-right" class="btn active">▶</button>
                 <button id="btn-up" class="btn disabled">▲</button>
             </div>
         </div>
     </div>
 
     <script>
-        const peer = new Peer();
-        const video = document.getElementById('remote-video');
-        const overlay = document.getElementById('overlay');
-        const gameUi = document.getElementById('game-ui');
-        const statusMsg = document.getElementById('status-msg');
-
-        function connectToCamera() {
-            const id = document.getElementById('target-id').value;
-            if (!id) return;
-
-            statusMsg.innerText = "接続中...";
-            
-            // 通信開始
-            const call = peer.call(id, new MediaStream());
-
-            call.on('stream', (stream) => {
-                // 1. 映像をセット
-                video.srcObject = stream;
-                
-                // 2. 映像再生を試みる
-                video.play().then(() => {
-                    // 3. 再生できたら画面を切り替え
-                    overlay.style.display = 'none';
-                    gameUi.style.display = 'flex';
-                    document.getElementById('guide').innerText = "右ボタンを長押し！";
-                    document.getElementById('btn-right').classList.add('active');
-                }).catch(err => {
-                    statusMsg.innerText = "再生エラー: 画面をタップしてください";
-                    console.error(err);
-                });
-            });
-
-            // エラーハンドリング
-            peer.on('error', (err) => {
-                statusMsg.innerText = "通信エラー: IDを確認してください";
-            });
-        }
-
-        // ボタン操作ロジック
         let step = 1;
         const btnRight = document.getElementById('btn-right');
         const btnUp = document.getElementById('btn-up');
+        const guide = document.getElementById('guide');
 
         function moveEnd(next) {
             if (next === 'up' && step === 1) {
                 step = 2;
                 btnRight.classList.replace('active', 'disabled');
-                btnUp.classList.remove('disabled');
-                btnUp.classList.add('active');
-                document.getElementById('guide').innerText = "次は奥ボタン！";
+                btnUp.classList.replace('disabled', 'active');
+                guide.innerText = "次は奥ボタン！";
             } else if (next === 'finish' && step === 2) {
                 step = 3;
                 btnUp.classList.replace('active', 'disabled');
-                document.getElementById('guide').innerText = "キャッチ動作中...";
+                guide.innerText = "キャッチ中...";
+                // 5秒後に最初に戻る
+                setTimeout(() => {
+                    step = 1;
+                    btnRight.classList.replace('disabled', 'active');
+                    guide.innerText = "右ボタンを長押し！";
+                }, 5000);
             }
         }
 
         btnRight.onmousedown = btnRight.ontouchstart = (e) => { if(step===1) e.preventDefault(); };
         btnRight.onmouseup = btnRight.ontouchend = () => { if(step===1) moveEnd('up'); };
-        
         btnUp.onmousedown = btnUp.ontouchstart = (e) => { if(step===2) e.preventDefault(); };
         btnUp.onmouseup = btnUp.ontouchend = () => { if(step===2) moveEnd('finish'); };
     </script>
