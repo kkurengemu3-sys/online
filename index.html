@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>オンクレ：操作パネル（修正版）</title>
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        :root { --accent: #ff4d8d; }
+        body { 
+            margin: 0; background: #000; color: white; font-family: sans-serif; 
+            overflow: hidden; touch-action: manipulation; /* ズーム防止 */
+        }
+        
+        /* 映像を確実に一番後ろへ */
+        #remote-video {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            object-fit: cover; z-index: 1; /* 最背面 */
+        }
+
+        /* UI全体を確実にボタンの上に */
+        .game-ui { 
+            position: relative; z-index: 10; /* 映像(1)より上に配置 */
+            height: 100vh; display: flex; flex-direction: column; 
+            pointer-events: none; /* UIの透明部分はタップをスルー */
+        }
+
+        .header { 
+            background: linear-gradient(rgba(0,0,0,0.8), transparent); 
+            padding: 20px; font-weight: bold; pointer-events: auto;
+        }
+
+        .footer { 
+            margin-top: auto; padding-bottom: 50px; 
+            background: linear-gradient(transparent, rgba(0,0,0,0.9)); 
+            text-align: center; pointer-events: auto; /* ボタン部分はタップ可能に */
+        }
+        
+        .btn-box { display: flex; justify-content: center; gap: 30px; margin-top: 20px; }
+        
+        /* ボタンのスタイル */
+        .btn { 
+            width: 100px; height: 100px; border-radius: 50%; 
+            border: 5px solid #fff; background: rgba(0,0,0,0.5); 
+            color: white; font-size: 2.5rem; 
+            cursor: pointer; outline: none;
+            display: flex; align-items: center; justify-content: center;
+            -webkit-tap-highlight-color: transparent; /* スマホの青い枠を消す */
+        }
+
+        .btn.active { border-color: var(--accent); box-shadow: 0 0 25px var(--accent); color: var(--accent); }
+        .btn.disabled { opacity: 0.2; filter: grayscale(1); }
+
+        /* 接続画面 */
+        #overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+            display: flex; flex-direction: column; justify-content: center; 
+            align-items: center; z-index: 100; pointer-events: auto;
+        }
+        input { padding: 15px; font-size: 1.2rem; border-radius: 5px; border: none; margin-bottom: 10px; width: 200px; text-align: center; }
+        .connect-btn { background: var(--accent); color: white; border: none; padding: 15px 40px; border-radius: 30px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <video id="remote-video" autoplay playsinline></video>
+
+    <div id="overlay">
+        <h2>カメラIDを入力</h2>
+        <input type="text" id="target-id" placeholder="例: a1b2c3d4">
+        <button class="connect-btn" onclick="connectToCamera()">ゲーム開始</button>
+    </div>
+
+    <div class="game-ui">
+        <div class="header">
+            <div id="guide">カメラIDを入れて開始してね</div>
+        </div>
+
+        <div class="footer">
+            <div class="btn-box">
+                <button id="btn-right" class="btn">▶</button>
+                <button id="btn-up" class="btn disabled">▲</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const peer = new Peer();
+        let step = 1;
+
+        function connectToCamera() {
+            const id = document.getElementById('target-id').value;
+            if (!id) return;
+            
+            const call = peer.call(id, new MediaStream());
+            call.on('stream', stream => {
+                document.getElementById('remote-video').srcObject = stream;
+                document.getElementById('overlay').style.display = 'none';
+                document.getElementById('guide').innerText = "【1】右ボタンを長押し！";
+                document.getElementById('btn-right').classList.add('active');
+            });
+        }
+
+        const btnRight = document.getElementById('btn-right');
+        const btnUp = document.getElementById('btn-up');
+
+        function moveStart(dir) {
+            if (dir === 'right' && step === 1) {
+                console.log("右に移動命令を送ります...");
+                // ここにモーターへの通信を書く
+            } else if (dir === 'up' && step === 2) {
+                console.log("奥に移動命令を送ります...");
+            }
+        }
+
+        function moveEnd(dir) {
+            if (dir === 'right' && step === 1) {
+                step = 2;
+                btnRight.classList.replace('active', 'disabled');
+                btnUp.classList.add('active');
+                btnUp.classList.remove('disabled');
+                document.getElementById('guide').innerText = "【2】奥ボタンを長押し！";
+            } else if (dir === 'up' && step === 2) {
+                step = 3;
+                btnUp.classList.replace('active', 'disabled');
+                document.getElementById('guide').innerText = "キャッチ中...";
+                // ここで自動降下の命令
+            }
+        }
+
+        // スマホとPC両方のクリック・タッチに対応
+        btnRight.onmousedown = btnRight.ontouchstart = (e) => { e.preventDefault(); moveStart('right'); };
+        btnRight.onmouseup = btnRight.ontouchend = () => { moveEnd('right'); };
+        
+        btnUp.onmousedown = btnUp.ontouchstart = (e) => { e.preventDefault(); moveStart('up'); };
+        btnUp.onmouseup = btnUp.ontouchend = () => { moveEnd('up'); };
+    </script>
+</body>
+</html>
