@@ -60,16 +60,7 @@
         const guide = document.getElementById('guide');
 
         function moveEnd(next) {
-            if (next === 'up' && step === 1) {
-                step = 2;
-                btnRight.classList.replace('active', 'disabled');
-                btnUp.classList.replace('disabled', 'active');
-                guide.innerText = "";
-            } else if (next === 'finish' && step === 2) {
-                step = 3;
-                btnUp.classList.replace('active', 'disabled');
-                guide.innerText = "";
-                // 5秒後に最初に戻る
+              
                 setTimeout(() => {
                     step = 1;
                     btnRight.classList.replace('disabled', 'active');
